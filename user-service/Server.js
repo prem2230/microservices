@@ -14,7 +14,7 @@ app.use(express.json());
 
 connectDB();
 
-app.use('/api/users', userRoutes);
+app.use('/api/v1/users', userRoutes);
 app.get('/health', (req,res) =>{
     res.json({
         service: 'User Service',
