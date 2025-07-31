@@ -13,7 +13,7 @@ app.use(express.json());
 
 connectDB();
 
-app.use('/api/restaurant', restaurantRoutes);
+app.use('/api/v1/restaurant', restaurantRoutes);
 app.get('/health', (req,res) =>{
     res.json({
         service: 'Restaurant Service',
