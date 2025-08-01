@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  user-service:
+    build: ./user-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - food-delivery-network
+
+  restaurant-service:
+    build: ./restaurant-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - food-delivery-network
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - food-delivery-network
+
+  food-service:
+    build: ./food-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+    networks:
+      - food-delivery-network
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-service
+      - restaurant-service
+      - order-service
+      - food-service
+    environment:
+      - NODE_ENV=production
+    networks:
+      - food-delivery-network
+
+networks:
+  food-delivery-network:
+    driver: bridge
