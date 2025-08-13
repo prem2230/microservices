@@ -5,6 +5,8 @@ services:
     build: ./user-service
     ports:
       - "3001:3001"
+    env_file:
+      - ./user-service/.env
     environment:
       - NODE_ENV=production
     networks:
@@ -14,6 +16,8 @@ services:
     build: ./restaurant-service
     ports:
       - "3002:3002"
+    env_file:
+      - ./restaurant-service/.env
     environment:
       - NODE_ENV=production
     networks:
@@ -23,6 +27,8 @@ services:
     build: ./order-service
     ports:
       - "3003:3003"
+    env_file:
+      - ./order-service/.env
     environment:
       - NODE_ENV=production
     networks:
@@ -32,6 +38,8 @@ services:
     build: ./food-service
     ports:
       - "3004:3004"
+    env_file:
+      - ./food-service/.env
     environment:
       - NODE_ENV=production
     networks:
