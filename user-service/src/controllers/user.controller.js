@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
+import { publishUserEvent } from '../services/kafka.producer.js';
 
 
 const registerUser = async (req, res) => {
@@ -147,6 +148,14 @@ const loginUser = async (req, res) => {
             process.env.SECRET_KEY,
             { expiresIn: '1h' }
         );
+
+        await publishUserEvent('user.logged_in', {
+            id: user._id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            number: user.number,
+        })
 
         res.status(200).json({
             success: true,

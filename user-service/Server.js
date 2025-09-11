@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './src/config/database.js';
 import userRoutes from './src/routes/user.routes.js';
+import { disconnectProducer } from './src/services/kafka.producer.js';
 
 
 dotenv.config();
@@ -39,6 +40,10 @@ app.use((req, res) =>{
     });
 });
 
+process.on('SIGINT', async () => {
+    await disconnectProducer();
+    process.exit(0);
+});
 
 app.listen(PORT, () => {
     console.log(`User service is running on port ${PORT}`);
