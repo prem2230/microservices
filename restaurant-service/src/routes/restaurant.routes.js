@@ -1,6 +1,8 @@
 import express from "express";
 import { deleteRestaurant, getAllRestaurants, getRestaurantById, registerRestaurant, updateRestaurant } from "../controllers/restaurant.controller.js";
-import { adminMiddleware, authMiddleware, ownerMiddleware } from "../middlewares/authMiddleware.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { adminMiddleware } from "../middlewares/admin.middleware.js";
+import { ownerMiddleware } from "../middlewares/owner.middleware.js";
 
 const router = express.Router();
 

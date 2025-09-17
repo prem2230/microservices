@@ -1,4 +1,5 @@
 // import FoodItem from '../models/foodItem.model.js';
+import { checkRestaurantOwner } from '../middlewares/owner.middleware.js';
 import Restaurant from '../models/restaurant.model.js';
 
 const registerRestaurant = async (req, res) => {
@@ -15,19 +16,12 @@ const registerRestaurant = async (req, res) => {
                 requiredFields: missingFields
             });
         }
-
-        const owner = req.userId;
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const owner = await checkRestaurantOwner(ownerId,token);
         if (!owner) {
-            return res.status(404).json({
-                success: false,
-                message: 'Owner not found'
-            });
-        }
-
-        if (owner.role !== 'restaurant_owner') {
             return res.status(400).json({
                 success: false,
-                message: "Permission denied. Required role: 'restaurant_owner'."
+                message: " Owner verification failed. Required role: 'restaurant_owner'."
             });
         }
 
