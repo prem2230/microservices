@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './src/config/database.js';
 import userRoutes from './src/routes/user.routes.js';
-import { disconnectProducer } from './src/services/kafka.producer.js';
 
 
 dotenv.config();
@@ -16,7 +15,7 @@ app.use(express.json());
 connectDB();
 
 app.use('/api/v1/users', userRoutes);
-app.get('/health', (req,res) =>{
+app.get('/api/v1/users/health', (req,res) =>{
     res.json({
         service: 'User Service',
         status: 'OK',
@@ -38,11 +37,6 @@ app.use((req, res) =>{
         success: false,
         message: 'Route not found'
     });
-});
-
-process.on('SIGINT', async () => {
-    await disconnectProducer();
-    process.exit(0);
 });
 
 app.listen(PORT, () => {

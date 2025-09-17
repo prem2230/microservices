@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
-import { publishUserEvent } from '../services/kafka.producer.js';
 
 
 const registerUser = async (req, res) => {
@@ -149,14 +148,6 @@ const loginUser = async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        await publishUserEvent('user.logged_in', {
-            id: user._id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            number: user.number,
-        })
-
         res.status(200).json({
             success: true,
             message: 'Login successful',
@@ -176,7 +167,7 @@ const loginUser = async (req, res) => {
     }
 }
 
-const getUser = async (req, res) => {
+const getProfile = async (req, res) => {
     try {
         const user = req.user;
 
@@ -202,4 +193,30 @@ const getUser = async (req, res) => {
     }
 }
 
-export { registerUser, loginUser, getUser };
+const getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id).select('-password');
+
+        if (!user) {    
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }   
+        
+        res.status(200).json({
+            success: true,
+            message: 'User fetched successfully',
+            user
+        });
+    } catch (error) {
+        console.error('Error fetching user by ID:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+}
+
+export { registerUser, loginUser, getProfile, getUserById };
