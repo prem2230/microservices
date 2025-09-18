@@ -9,7 +9,7 @@ export const authMiddleware = async (req, res, next) =>{
       return res.status(401).json({ success: false, message: 'Access denied' });
     }
 
-    const response = await axios.get(`${USER_SERVICE_URL}/api/users/profile`, {
+    const response = await axios.get(`${USER_SERVICE_URL}/api/v1/users/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -21,17 +21,3 @@ export const authMiddleware = async (req, res, next) =>{
     res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
-
-export const adminMiddleware = (req, res, next) => {
-  if (req.userRole !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
-  next();
-};
-
-export const ownerMiddleware = (req, res, next) => {
-  if (req.userRole !== 'restaurant_owner') {
-    return res.status(403).json({ success: false, message: 'Restaurant owner access required' });
-  }
-  next();
-};

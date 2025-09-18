@@ -14,7 +14,7 @@ app.use(express.json());
 connectDB();
 
 app.use('/api/v1/fooditem', foodItemRoutes);
-app.get('/health', (req,res) =>{
+app.get('/api/v1/fooditem/health', (req,res) =>{
     res.json({
         service: 'Food Service',
         status: 'OK',

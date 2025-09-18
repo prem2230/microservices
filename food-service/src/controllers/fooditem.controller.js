@@ -1,5 +1,5 @@
+import { validateRestaurant } from '../middlewares/restaurant.middleware.js';
 import FoodItem from '../models/fooditem.model.js';
-// import Restaurant from '../models/restaurant.model.js';
 
 const addFoodItem = async (req, res) => {
   try {
@@ -17,7 +17,8 @@ const addFoodItem = async (req, res) => {
       });
     }
 
-    const restaurant = await Restaurant.findById(id);
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const restaurant = await validateRestaurant(id, token);
     if (!restaurant) {
       return res.status(404).json({
         success: false,
@@ -67,7 +68,7 @@ const addFoodItem = async (req, res) => {
 
 const getAllFoodItems = async (req, res) => {
   try {
-    const foodItems = await FoodItem.find().populate('restaurant', 'name');
+    const foodItems = await FoodItem.find();
     
     res.status(200).json({
       success: true,
@@ -87,7 +88,7 @@ const getFoodItemById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const foodItem = await FoodItem.findById(id).populate('restaurant', 'name address');
+    const foodItem = await FoodItem.findById(id);
     if (!foodItem) {
       return res.status(404).json({
         success: false,
@@ -120,7 +121,7 @@ const updateFoodItem = async (req, res) => {
           message: 'Food item not found'
         });
       }
-  
+      
       foodItem.name = name || foodItem.name;
       foodItem.price = price || foodItem.price;
       foodItem.isVeg = isVeg || foodItem.isVeg;
