@@ -1,4 +1,4 @@
-// import FoodItem from '../models/foodItem.model.js';
+import { getFoodItems } from '../middlewares/fooditem.middleware.js';
 import { checkRestaurantOwner } from '../middlewares/owner.middleware.js';
 import Restaurant from '../models/restaurant.model.js';
 
@@ -99,12 +99,20 @@ const getRestaurantById = async (req, res) => {
             });
         }
 
-        // const foodItems = await FoodItem.find({ restaurant: id });
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        const foodItems = await getFoodItems(id,token);
+
+        if(!foodItems){
+            return res.status(404).json({
+                success: false,
+                message: 'Food items not found'
+            });
+        };
 
         res.status(200).json({
             success: true,
             restaurant,
-            // foodItems
+            foodItems
         });
     } catch (error) {
         console.error('Error fetching restaurant:', error);

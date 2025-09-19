@@ -45,6 +45,8 @@ const foodItemSchema = new mongoose.Schema({
   timestamps: true
 });
 
+foodItemSchema.index({ restaurant: 1 })
+
 const FoodItem = mongoose.model('FoodItem', foodItemSchema);
 
 export default FoodItem;

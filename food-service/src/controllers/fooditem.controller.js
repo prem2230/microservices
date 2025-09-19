@@ -171,4 +171,40 @@ const updateFoodItem = async (req, res) => {
     }
   };
 
-export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, deleteFoodItem };
+  const getFoodItemsByRestaurant = async (req, res) => {
+    try {
+      const { restaurantId } = req.params;
+
+      const foodItems = await FoodItem.find({ restaurant: restaurantId });
+
+      if (foodItems.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No food items found for the specified restaurant'
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        count: foodItems.length,
+        foodItems: foodItems.map(foodItem => ({
+          id: foodItem._id,
+          name: foodItem.name,
+          price: foodItem.price,
+          isVeg: foodItem.isVeg,
+          category: foodItem.category,
+          description: foodItem.description,
+          isAvailable: foodItem.isAvailable,
+          image: foodItem.image
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching food items by restaurant:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  };
+
+export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, deleteFoodItem, getFoodItemsByRestaurant };
