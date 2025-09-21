@@ -1,3 +1,5 @@
+import { getFoodItem } from '../middlewares/fooditem.middleware.js';
+import { getUserById } from '../middlewares/user.middleware.js';
 import Order from '../models/order.model.js';
 // import FoodItem from '../models/foodItem.model.js';
 
@@ -5,7 +7,7 @@ const placeOrder = async (req, res) => {
     try {
         const { items, deliveryAddress, restaurantId } = req.body;
 
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Order must contain at least one item' });
@@ -21,8 +23,10 @@ const placeOrder = async (req, res) => {
         let totalAmount = 0;
         const orderItems = [];
 
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+
         for (const item of items) {
-            const foodItem = await FoodItem.findById(item.foodItemId);
+            const foodItem = await getFoodItem(item.foodItemId, token);
 
             if (!foodItem) {
                 return res.status(404).json({ message: `Food item with ID ${item.foodItemId} not found` });
@@ -43,6 +47,10 @@ const placeOrder = async (req, res) => {
 
             orderItems.push({
                 foodItem: item.foodItemId,
+                price: foodItem.price,
+                name: foodItem.name,
+                image: foodItem.image,
+                restaurant: foodItem.restaurant,
                 quantity: item.quantity
             });
         }
@@ -73,19 +81,29 @@ const placeOrder = async (req, res) => {
 
 const getOrdersByUser = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user.id;
 
-        const orders = await Order.find({ user: userId })
-            .populate({
-                path: 'items.foodItem',
-                select: 'name price image'
-            })
-            .sort({ createdAt: -1 });
+        const orders = await Order.find({ user: userId }).sort({ createdAt: -1 })
 
         res.status(200).json({
             success: true,
             count: orders.length,
-            orders
+            orders: orders.map(order => ({
+                id: order._id,
+                restaurant: order.restaurant,
+                items: order.items.map(item => ({
+                    foodItemId: item.foodItem,
+                    name: item.name,
+                    price: item.price,
+                    image: item.image,
+                    quantity: item.quantity
+                })),
+                totalAmount: order.totalAmount,
+                deliveryAddress: order.deliveryAddress,
+                status: order.status,
+                createdAt: order.createdAt,
+                updatedAt: order.updatedAt
+            }))
         });
     } catch (error) {
         res.status(500).json({
@@ -101,14 +119,6 @@ const getOrderById = async (req, res) => {
         const { orderId } = req.params;
 
         const order = await Order.findById(orderId)
-            .populate({
-                path: 'items.foodItem',
-                select: 'name price image restaurant'
-            })
-            .populate({
-                path: 'user',
-                select: 'name email phone'
-            });
 
         if (!order) {
             return res.status(404).json({
@@ -134,7 +144,7 @@ const updateOrderItems = async (req, res) => {
     try {
         const { orderId } = req.params;
         const { items, deliveryAddress } = req.body;
-        const userId = req.user._id;
+        const userId = req.user.id;
 
         const order = await Order.findById(orderId);
 
@@ -145,7 +155,7 @@ const updateOrderItems = async (req, res) => {
             });
         }
 
-        if (order.user.toString() !== userId.toString()) {
+        if (order.user.toString() !== userId) {
             return res.status(403).json({
                 success: false,
                 message: 'You can only update your own orders'
@@ -163,12 +173,14 @@ const updateOrderItems = async (req, res) => {
         let totalAmount = order.totalAmount;
         let updatedDeliveryAddress = order.deliveryAddress;
 
+        const token = req.header('Authorization')?.replace('Bearer ', '')
+
         if (items && Array.isArray(items) && items.length > 0) {
             updatedItems = [];
             totalAmount = 0;
 
             for (const item of items) {
-                const foodItem = await FoodItem.findById(item.foodItemId);
+                const foodItem = await getFoodItem(item.foodItemId, token);
 
                 if (!foodItem) {
                     return res.status(404).json({
@@ -196,7 +208,11 @@ const updateOrderItems = async (req, res) => {
 
                 updatedItems.push({
                     foodItem: item.foodItemId,
-                    quantity: item.quantity
+                    quantity: item.quantity,
+                    price: foodItem.price,
+                    name: foodItem.name,
+                    image: foodItem.image,
+                    restaurant: foodItem.restaurant
                 });
             }
         }
@@ -302,23 +318,50 @@ const deleteOrder = async (req, res) => {
 const getOrdersByRestaurant = async (req, res) => {
     try {
       const { restaurantId } = req.params;
-      const userId = req.user._id;
       
-      const orders = await Order.find({ restaurant: restaurantId })
-        .populate({
-          path: 'items.foodItem',
-          select: 'name price image'
-        })
-        .populate({
-          path: 'user',
-          select: 'name email phone'
-        })
-        .sort({ createdAt: -1 });
-      
+      const orders = await Order.find({ restaurant: restaurantId }).sort({ createdAt: -1 });
+
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      if(!orders.length){
+        return res.status(404).json({
+          success: false,
+          message: 'No orders found for the specified restaurant',
+        });
+      }
+
+      let updatedOrders = [];
+
+      for (const order of orders) {
+        const user = await getUserById(order.user, token);
+
+        updatedOrders.push({
+          id: order._id,
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            number: user.number
+          },
+          restaurant: order.restaurant,
+          items: order.items.map(item => ({
+            foodItemId: item.foodItem,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            quantity: item.quantity
+          })),
+          totalAmount: order.totalAmount,
+          deliveryAddress: order.deliveryAddress,
+          status: order.status,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt
+        });
+      }
+
       res.status(200).json({
         success: true,
         count: orders.length,
-        orders
+        orders: updatedOrders
       });
     } catch (error) {
       res.status(500).json({

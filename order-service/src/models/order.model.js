@@ -17,6 +17,23 @@ const orderSchema = new mongoose.Schema({
       ref: 'FoodItem',
       required: true
     },
+    name:{
+      type: String,
+      required: true
+    },
+    price:{
+      type: String,
+      required: true
+    },
+    restaurant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: true
+    },
+    image: {
+      type: String,
+      required: true
+    },
     quantity: {
       type: Number,
       required: true,

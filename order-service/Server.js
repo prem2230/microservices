@@ -14,7 +14,7 @@ app.use(express.json());
 connectDB();
 
 app.use('/api/v1/order', orderRoutes);
-app.get('/health', (req,res) =>{
+app.get('/api/v1/order/health', (req,res) =>{
     res.json({
         service: 'Order Service',
         status: 'OK',

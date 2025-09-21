@@ -9,7 +9,7 @@ export const authMiddleware = async (req, res, next) =>{
       return res.status(401).json({ success: false, message: 'Access denied' });
     }
 
-    const response = await axios.get(`${USER_SERVICE_URL}/api/users/profile`, {
+    const response = await axios.get(`${USER_SERVICE_URL}/api/v1/users/profile`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -18,6 +18,7 @@ export const authMiddleware = async (req, res, next) =>{
     req.userRole = response.data.user.role;
     next();
   } catch (error) {
+    console.log(error)
     res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
