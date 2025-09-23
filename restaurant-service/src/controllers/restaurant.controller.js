@@ -1,12 +1,11 @@
-import { getFoodItems } from '../middlewares/fooditem.middleware.js';
-import { checkRestaurantOwner } from '../middlewares/owner.middleware.js';
 import Restaurant from '../models/restaurant.model.js';
 
 const registerRestaurant = async (req, res) => {
     try {
-        const { name, address, contactNumber, cuisine, ownerId } = req.body;
+        const ownerId = req.user.id;
+        const { name, address, contactNumber, cuisine } = req.body;
 
-        const requiredFields = ['name', 'address', 'contactNumber', 'cuisine', 'ownerId'];
+        const requiredFields = ['name', 'address', 'contactNumber', 'cuisine'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -14,14 +13,6 @@ const registerRestaurant = async (req, res) => {
                 success: false,
                 message: 'Missing required fields',
                 requiredFields: missingFields
-            });
-        }
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        const owner = await checkRestaurantOwner(ownerId,token);
-        if (!owner) {
-            return res.status(400).json({
-                success: false,
-                message: " Owner verification failed. Required role: 'restaurant_owner'."
             });
         }
 
@@ -38,12 +29,12 @@ const registerRestaurant = async (req, res) => {
             address,
             contactNumber,
             cuisine,
-            owner: ownerId
+            owner:ownerId 
         });
 
         await newRestaurant.save();
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: 'Restaurant registered successfully',
             restaurant: newRestaurant
@@ -62,7 +53,7 @@ const registerRestaurant = async (req, res) => {
             });
         }
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -73,14 +64,14 @@ const getAllRestaurants = async (req, res) => {
     try {
         const restaurants = await Restaurant.find();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             count: restaurants.length,
             restaurants
         });
     } catch (error) {
         console.error('Error fetching restaurants:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -99,24 +90,13 @@ const getRestaurantById = async (req, res) => {
             });
         }
 
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        const foodItems = await getFoodItems(id,token);
-
-        if(!foodItems){
-            return res.status(404).json({
-                success: false,
-                message: 'Food items not found'
-            });
-        };
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             restaurant,
-            foodItems
         });
     } catch (error) {
         console.error('Error fetching restaurant:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -126,6 +106,7 @@ const getRestaurantById = async (req, res) => {
 const updateRestaurant = async (req, res) => {
     try {
         const { id } = req.params;
+        const ownerId = req.user.id;
         const { name, address, contactNumber, cuisine } = req.body;
 
         const restaurant = await Restaurant.findById(id);
@@ -144,6 +125,13 @@ const updateRestaurant = async (req, res) => {
             });
         }
 
+        if(restaurant.owner.toString() !== ownerId){
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to update this restaurant'
+            });
+        }
+
         restaurant.name = name || restaurant.name;
         restaurant.address = address || restaurant.address;
         restaurant.contactNumber = contactNumber || restaurant.contactNumber;
@@ -151,14 +139,14 @@ const updateRestaurant = async (req, res) => {
 
         await restaurant.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'Restaurant updated successfully',
             restaurant
         });
     } catch (error) {
         console.error('Error updating restaurant:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -177,15 +165,22 @@ const deleteRestaurant = async (req, res) => {
             });
         }
 
+        if(restaurant.owner.toString() !== req.user.id){
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to delete this restaurant'
+            });
+        }
+
         await Restaurant.findByIdAndDelete(id);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'Restaurant deleted successfully'
         });
     } catch (error) {
         console.error('Error deleting restaurant:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });

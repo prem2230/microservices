@@ -3,13 +3,14 @@ import { deleteRestaurant, getAllRestaurants, getRestaurantById, registerRestaur
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { adminMiddleware } from "../middlewares/admin.middleware.js";
 import { ownerMiddleware } from "../middlewares/owner.middleware.js";
+import { customerMiddleware } from "../middlewares/customer.middleware.js";
 
 const router = express.Router();
 
-router.post('/register', authMiddleware, adminMiddleware, registerRestaurant);
-router.get('/get-restaurants',authMiddleware,getAllRestaurants);
-router.get('/get-restaurant/:id',authMiddleware, getRestaurantById);
+router.post('/register', authMiddleware, ownerMiddleware, registerRestaurant);
 router.put('/update-restaurant/:id', authMiddleware, ownerMiddleware, updateRestaurant);
-router.delete('/delete-restaurant/:id', authMiddleware, adminMiddleware, deleteRestaurant);
+router.delete('/delete-restaurant/:id', authMiddleware, ownerMiddleware, deleteRestaurant);
+router.get('/get-restaurants',authMiddleware,customerMiddleware, getAllRestaurants);
+router.get('/get-restaurant/:id',authMiddleware,customerMiddleware, getRestaurantById);
 
 export default router;
