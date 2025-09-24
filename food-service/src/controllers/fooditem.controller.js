@@ -181,7 +181,7 @@ const getFoodItemsByRestaurant = async (req, res) => {
   try {
     const { restaurantId } = req.params;
 
-    const foodItems = await FoodItem.find({ restaurant: restaurantId });
+    const foodItems = await FoodItem.find({ restaurant: restaurantId }).select('-restaurant').select('-ownerId');
 
     if (foodItems.length === 0) {
       return res.status(404).json({
@@ -193,16 +193,7 @@ const getFoodItemsByRestaurant = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: foodItems.length,
-      foodItems: foodItems.map(foodItem => ({
-        id: foodItem._id,
-        name: foodItem.name,
-        price: foodItem.price,
-        isVeg: foodItem.isVeg,
-        category: foodItem.category,
-        description: foodItem.description,
-        isAvailable: foodItem.isAvailable,
-        image: foodItem.image
-      }))
+      foodItems
     });
   } catch (error) {
     console.error('Error fetching food items by restaurant:', error);
