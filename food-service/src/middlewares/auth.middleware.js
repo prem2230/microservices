@@ -1,23 +1,34 @@
-import axios from 'axios';
+import jwt from 'jsonwebtoken';
 
-const USER_SERVICE_URL = 'http://localhost:3001';
+export const validateJWT = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    return { success: true, user: decoded }
 
-export const authMiddleware = async (req, res, next) =>{
-     try {
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+export const authMiddleware = async (req, res, next) => {
+  try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Access denied' });
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
     }
 
-    const response = await axios.get(`${USER_SERVICE_URL}/api/v1/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const result = validateJWT(token);
 
-    req.user = response.data.user;
-    req.userId = response.data.user.id;
-    req.userRole = response.data.user.role;
+    if(!result.success){
+      return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+
+    req.user = {
+      id: result.user.userId,
+      role: result.user.role
+    }
     next();
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 }

@@ -33,13 +33,22 @@ const foodItemSchema = new mongoose.Schema({
     ref: 'Restaurant',
     required: [true, 'Restaurant is required']
   },
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Owner is required']
+  },
   isAvailable: {
     type: Boolean,
-    default: true
+    default: false
   },
   image: {
     type: String,
     default: ''
+  },
+  quantity: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

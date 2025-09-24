@@ -1,5 +1,5 @@
 
-const ownerMiddleware = (req, res, next) => {
+export const ownerMiddleware = (req, res, next) => {
     if(req.user.role !== 'restaurant_owner'){
         return res.status(403).json({
             success:false,
@@ -8,5 +8,3 @@ const ownerMiddleware = (req, res, next) => {
     }
     next();
 }
-
-export default ownerMiddleware;

@@ -1,28 +1,19 @@
-import { validateRestaurant } from '../middlewares/restaurant.middleware.js';
 import FoodItem from '../models/fooditem.model.js';
 
 const addFoodItem = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, price, isVeg, category, description, isAvailable, image } = req.body;
-    
+    const { restaurantId } = req.params;
+    const ownerId = req.user.id;
+    const { name, price, isVeg, category, description, isAvailable, image, quantity } = req.body;
+
     const requiredFields = ['name', 'price', 'isVeg', 'category'];
     const missingFields = requiredFields.filter(field => req.body[field] === undefined);
-    
+
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields',
         requiredFields: missingFields
-      });
-    }
-
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    const restaurant = await validateRestaurant(id, token);
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: 'Restaurant not found'
       });
     }
 
@@ -32,22 +23,24 @@ const addFoodItem = async (req, res) => {
       isVeg,
       category,
       description: description || '',
-      restaurant: id,
+      restaurant: restaurantId,// need to add kafka
+      ownerId,
       isAvailable,
-      image: image || ''
+      image: image || '',
+      quantity: quantity || 0,
 
     });
 
     await newFoodItem.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Food item added successfully',
       foodItem: newFoodItem
     });
   } catch (error) {
     console.error('Error adding food item:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errorMessages = [];
       for (let key in error.errors) {
@@ -59,7 +52,161 @@ const addFoodItem = async (req, res) => {
       });
     }
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+const updateFoodItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user.id;
+    const { name, price, isVeg, category, description, image } = req.body;
+
+    const foodItem = await FoodItem.findById(id);
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Food item not found'
+      });
+    }
+
+    if (foodItem.ownerId.toString() !== ownerId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only update your own food items.'
+      });
+    }
+
+    foodItem.name = name || foodItem.name;
+    foodItem.price = price || foodItem.price;
+    foodItem.isVeg = isVeg || foodItem.isVeg;
+    foodItem.category = category || foodItem.category;
+    foodItem.description = description || foodItem.description;
+    foodItem.image = image || foodItem.image;
+
+    await foodItem.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Food item updated successfully',
+      foodItem
+    });
+  } catch (error) {
+    console.error('Error updating food item:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+const updateFoodItemQuantity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user.id;
+    const { quantity } = req.body;
+
+    const foodItem = await FoodItem.findById(id);
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Food item not found'
+      });
+    }
+
+    if (foodItem.ownerId.toString() !== ownerId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only update your own food items.'
+      });
+    }
+
+    foodItem.quantity = quantity || foodItem.quantity;
+    foodItem.isAvailable = quantity > 0;
+
+    await foodItem.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Food item quantity updated successfully',
+      foodItem
+    });
+
+  } catch (error) {
+    console.error('Error updating food item quantity:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
+
+const deleteFoodItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user.id;
+
+    const foodItem = await FoodItem.findByIdAndDelete(id);
+    if (!foodItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Food item not found'
+      });
+    }
+
+    if (foodItem.ownerId.toString() !== ownerId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only delete your own food items.'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Food item deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting food item:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+const getFoodItemsByRestaurant = async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+
+    const foodItems = await FoodItem.find({ restaurant: restaurantId });
+
+    if (foodItems.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No food items found for the specified restaurant'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: foodItems.length,
+      foodItems: foodItems.map(foodItem => ({
+        id: foodItem._id,
+        name: foodItem.name,
+        price: foodItem.price,
+        isVeg: foodItem.isVeg,
+        category: foodItem.category,
+        description: foodItem.description,
+        isAvailable: foodItem.isAvailable,
+        image: foodItem.image
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching food items by restaurant:', error);
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
@@ -69,15 +216,22 @@ const addFoodItem = async (req, res) => {
 const getAllFoodItems = async (req, res) => {
   try {
     const foodItems = await FoodItem.find();
-    
-    res.status(200).json({
+
+    if (!foodItems.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'No food items found'
+      });
+    }
+
+    return res.status(200).json({
       success: true,
       count: foodItems.length,
       foodItems
     });
   } catch (error) {
     console.error('Error fetching food items:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
@@ -87,7 +241,7 @@ const getAllFoodItems = async (req, res) => {
 const getFoodItemById = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const foodItem = await FoodItem.findById(id);
     if (!foodItem) {
       return res.status(404).json({
@@ -95,116 +249,18 @@ const getFoodItemById = async (req, res) => {
         message: 'Food item not found'
       });
     }
-    
-    res.status(200).json({
+
+    return res.status(200).json({
       success: true,
       foodItem
     });
   } catch (error) {
     console.error('Error fetching food item:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error'
     });
   }
 };
 
-const updateFoodItem = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { name, price, isVeg, category, description, isAvailable, image } = req.body;
-  
-      const foodItem = await FoodItem.findById(id);
-      if (!foodItem) {
-        return res.status(404).json({
-          success: false,
-          message: 'Food item not found'
-        });
-      }
-      
-      foodItem.name = name || foodItem.name;
-      foodItem.price = price || foodItem.price;
-      foodItem.isVeg = isVeg || foodItem.isVeg;
-      foodItem.category = category || foodItem.category;
-      foodItem.description = description || foodItem.description;
-      foodItem.isAvailable = isAvailable || foodItem.isAvailable;
-      foodItem.image = image || foodItem.image;
-  
-      await foodItem.save();
-  
-      res.status(200).json({
-        success: true,
-        message: 'Food item updated successfully',
-        foodItem
-      });
-    } catch (error) {
-      console.error('Error updating food item:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
-    }
-  };
-
-  const deleteFoodItem = async (req, res) => {
-    try {
-      const { id } = req.params;
-  
-      const foodItem = await FoodItem.findByIdAndDelete(id);
-      if (!foodItem) {
-        return res.status(404).json({
-          success: false,
-          message: 'Food item not found'
-        });
-      }
-  
-      res.status(200).json({
-        success: true,
-        message: 'Food item deleted successfully'
-      });
-    } catch (error) {
-      console.error('Error deleting food item:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
-    }
-  };
-
-  const getFoodItemsByRestaurant = async (req, res) => {
-    try {
-      const { restaurantId } = req.params;
-
-      const foodItems = await FoodItem.find({ restaurant: restaurantId });
-
-      if (foodItems.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No food items found for the specified restaurant'
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        count: foodItems.length,
-        foodItems: foodItems.map(foodItem => ({
-          id: foodItem._id,
-          name: foodItem.name,
-          price: foodItem.price,
-          isVeg: foodItem.isVeg,
-          category: foodItem.category,
-          description: foodItem.description,
-          isAvailable: foodItem.isAvailable,
-          image: foodItem.image
-        }))
-      });
-    } catch (error) {
-      console.error('Error fetching food items by restaurant:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-      });
-    }
-  };
-
-export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, deleteFoodItem, getFoodItemsByRestaurant };
+export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, updateFoodItemQuantity, deleteFoodItem, getFoodItemsByRestaurant };
