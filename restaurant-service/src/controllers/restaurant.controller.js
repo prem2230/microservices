@@ -187,4 +187,33 @@ const deleteRestaurant = async (req, res) => {
     }
 };
 
-export { registerRestaurant, getAllRestaurants, getRestaurantById,updateRestaurant, deleteRestaurant };
+const getRestaurantByOwner = async (req, res) => {
+    try{
+        const ownerId = req.user.id;
+
+        const restaurants = await Restaurant.find({ owner: ownerId }).select('-owner');
+
+        if(!restaurants){
+            return res.status(404).json({
+                success: false,
+                message: 'No restaurants found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Restaurants fetched successfully',
+            count: restaurants.length,
+            restaurants
+        });
+
+    }catch(error){
+        console.error('Error fetching restaurants:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+}
+
+export { registerRestaurant, getAllRestaurants, getRestaurantById,updateRestaurant, deleteRestaurant, getRestaurantByOwner };
