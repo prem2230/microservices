@@ -144,6 +144,73 @@ const updateFoodItemQuantity = async (req, res) => {
   }
 }
 
+const updateInventory = async (req, res) => {
+  try{
+      const { id } = req.params;
+      const { quantity, operation = 'reduce' } = req.body;
+
+      let updateQuery = {};
+      let findQuery = {_id: id};
+
+      if(operation === 'reduce'){
+        findQuery.quantity = { $gte: quantity };
+
+        const foodItem = await FoodItem.findOne(findQuery);
+
+        if(!foodItem){
+          return res.status(400).json({
+            success: false,
+            message: 'Insufficient quantity'
+          });
+        }
+
+        const newQuantity = foodItem.quantity - quantity;
+        const isAvailable = newQuantity > 0;
+
+        updateQuery = {
+          quantity: newQuantity,
+          isAvailable
+        };
+
+      }else if(operation === 'add') {
+        updateQuery = {
+          $inc: { quantity: quantity },
+          $set: { isAvailable: true }
+        };
+      }else{
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid operation. Use "reduce" or "add".'
+        });
+      }
+
+      const updatedFoodItem = await FoodItem.findByIdAndUpdate(
+        id, 
+        updateQuery,
+        { new: true }
+      );
+
+      if(!updatedFoodItem){
+        return res.status(404).json({
+          success: false,
+          message: 'Food item not found'
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `Quantity updated successfully`,
+        foodItem:updatedFoodItem
+      });
+  }catch(error){
+    console.error('Error updating inventory:', error)
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to reduce quantity'
+    });
+  }
+}
+
 const deleteFoodItem = async (req, res) => {
   try {
     const { id } = req.params;
@@ -254,4 +321,4 @@ const getFoodItemById = async (req, res) => {
   }
 };
 
-export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, updateFoodItemQuantity, deleteFoodItem, getFoodItemsByRestaurant };
+export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, updateFoodItemQuantity, deleteFoodItem, getFoodItemsByRestaurant, updateInventory };
