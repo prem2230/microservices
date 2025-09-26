@@ -2,6 +2,7 @@ import express from 'express';
 import { getOrdersByUser, getOrderById, placeOrder, updateOrderItems, updateOrderStatus, getOrdersByRestaurant, cancelOrder } from '../controllers/order.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import customerMiddleware from '../middlewares/customer.middleware.js';
+import ownerMiddleware from '../middlewares/owner.middleware.js';
 
 const router = express.Router();
 
@@ -12,6 +13,6 @@ router.put('/update-order/:orderId', authMiddleware, customerMiddleware,updateOr
 router.put('/cancel-order/:orderId', authMiddleware, customerMiddleware, cancelOrder);
 // router.delete('/delete-order/:orderId', authMiddleware, customerMiddleware, deleteOrder);
 // router.put('/update-order-status/:orderId', authMiddleware, ownerMiddleware, updateOrderStatus);
-// router.get('/get-all-ordersByRestaurant/:restaurantId',authMiddleware, ownerMiddleware, getOrdersByRestaurant)
+router.get('/get-all-ordersByRestaurant/:restaurantId',authMiddleware, ownerMiddleware, getOrdersByRestaurant)
 
 export default router;

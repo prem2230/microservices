@@ -6,16 +6,16 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User is required']
   },
+  restaurantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Restaurant',
+      required: [true, 'Restaurant is required']
+    },
   items: [{
     foodItemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'FoodItem',
       required: true
-    },
-    restaurantId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant',
-      required: [true, 'Restaurant is required']
     },
     price: {
       type: String,
@@ -47,6 +47,10 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+orderSchema.index({ user: 1 });
+orderSchema.index({ restaurantId: 1 });
+orderSchema.index({ status: 1 });
 
 const Order = mongoose.model('Order', orderSchema);
 

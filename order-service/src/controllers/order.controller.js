@@ -3,12 +3,19 @@ import { restoreOrderAsync, validateOrderAsync } from '../services/orderValidati
 
 const placeOrder = async (req, res) => {
     try {
-        const { items, deliveryAddress, totalAmount } = req.body;
+        const { restaurantId,items, deliveryAddress, totalAmount } = req.body;
 
         const userId = req.user.id;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Order must contain at least one item' });
+        }
+
+        if(!restaurantId){
+            return res.status(400).json({
+                success: false,
+                message: 'Restaurant ID is required'
+            })
         }
 
           const calculatedTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
@@ -23,6 +30,7 @@ const placeOrder = async (req, res) => {
 
         const newOrder = new Order({
             user: userId,
+            restaurantId,
             items,
             totalAmount,
             deliveryAddress,
@@ -51,7 +59,7 @@ const getOrdersByUser = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const orders = await Order.find({ user: userId }).sort({ createdAt: -1 }).select('-user')
+        const orders = await Order.find({ user: userId,status:{$ne:'Cancelled'} }).sort({ createdAt: -1 }).select('-user')
 
         return res.status(200).json({
             success: true,
@@ -263,112 +271,82 @@ const deleteOrder = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-    // try {
-    //     const { orderId } = req.params;
-    //     const { status } = req.body;
-    //     const restaurantOwnerId = req.user.id;
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
+        const restaurantOwnerId = req.user.id;
 
-    //     const validStatuses = ['Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'];
-    //     const cancelStatuses = ['Cancelled'];
+        const validStatuses = ['Confirmed', 'Preparing', 'Out for Delivery', 'Delivered'];
+        const cancelStatuses = ['Cancelled'];
 
-    //     if (!status || !validStatuses.includes(status) && !cancelStatuses.includes(status)) {
-    //         return res.status(400).json({
-    //             success: false,
-    //             message: 'Invalid order status'
-    //         });
-    //     }
+        if (!status || !validStatuses.includes(status) && !cancelStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid order status'
+            });
+        }
 
-    //     const order = await Order.findById(orderId);
+        const order = await Order.findById(orderId);
 
-    //     if(!order){
-    //         return res.status(404).json({
-    //             success: false,
-    //             message: 'Order not found'
-    //         });
-    //     }
+        if(!order){
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
 
 
-    //     const updatedOrder = await Order.findByIdAndUpdate(
-    //         orderId,
-    //         { status },
-    //         { new: true, runValidators: true }
-    //     );
+        const updatedOrder = await Order.findByIdAndUpdate(
+            orderId,
+            { status },
+            { new: true, runValidators: true }
+        );
 
-    //     if (!updatedOrder) {
-    //         return res.status(404).json({
-    //             success: false,
-    //             message: 'Order not found'
-    //         });
-    //     }
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
 
-    //     return res.status(200).json({
-    //         success: true,
-    //         order: updatedOrder
-    //     });
-    // } catch (error) {
-    //     return res.status(500).json({
-    //         success: false,
-    //         message: 'Failed to update order status',
-    //         error: error.message
-    //     });
-    // }
+        return res.status(200).json({
+            success: true,
+            order: updatedOrder
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update order status',
+            error: error.message
+        });
+    }
 };
 
 const getOrdersByRestaurant = async (req, res) => {
-    // try {
-    //   const { restaurantId } = req.params;
+    try {
+      const { restaurantId } = req.params;
       
-    //   const orders = await Order.find({ restaurant: restaurantId }).sort({ createdAt: -1 });
+      const orders = await Order.find({restaurantId}).sort({ createdAt: -1 });
 
-    //   const token = req.header('Authorization')?.replace('Bearer ', '');
-    //   if(!orders.length){
-    //     return res.status(404).json({
-    //       success: false,
-    //       message: 'No orders found for the specified restaurant',
-    //     });
-    //   }
+      if(!orders.length){
+        return res.status(404).json({
+          success: false,
+          message: 'No orders found for the specified restaurant',
+        });
+      }
 
-    //   let updatedOrders = [];
-
-    //   for (const order of orders) {
-    //     const user = await getUserById(order.user, token);
-
-    //     updatedOrders.push({
-    //       id: order._id,
-    //       user: {
-    //         id: user._id,
-    //         name: user.name,
-    //         email: user.email,
-    //         number: user.number
-    //       },
-    //       restaurant: order.restaurant,
-    //       items: order.items.map(item => ({
-    //         foodItemId: item.foodItem,
-    //         name: item.name,
-    //         price: item.price,
-    //         image: item.image,
-    //         quantity: item.quantity
-    //       })),
-    //       totalAmount: order.totalAmount,
-    //       deliveryAddress: order.deliveryAddress,
-    //       status: order.status,
-    //       createdAt: order.createdAt,
-    //       updatedAt: order.updatedAt
-    //     });
-    //   }
-
-    //   res.status(200).json({
-    //     success: true,
-    //     count: orders.length,
-    //     orders: updatedOrders
-    //   });
-    // } catch (error) {
-    //   res.status(500).json({
-    //     success: false,
-    //     message: 'Failed to fetch restaurant orders',
-    //     error: error.message
-    //   });
-    // }
-  };
+      return res.status(200).json({
+        success: true,
+        count: orders.length,
+        orders
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch restaurant orders',
+        error: error.message
+      });
+    }
+};
   
 export { placeOrder, getOrdersByUser, getOrderById, updateOrderItems, updateOrderStatus, cancelOrder, getOrdersByRestaurant };
