@@ -6,31 +6,18 @@ const orderSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User is required']
   },
-  restaurant: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Restaurant',
-    required: [true, 'Restaurant is required']
-  },
   items: [{
-    foodItem: {
+    foodItemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'FoodItem',
       required: true
     },
-    name:{
-      type: String,
-      required: true
-    },
-    price:{
-      type: String,
-      required: true
-    },
-    restaurant: {
+    restaurantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Restaurant',
-      required: true
+      required: [true, 'Restaurant is required']
     },
-    image: {
+    price: {
       type: String,
       required: true
     },
@@ -50,8 +37,12 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled'],
-    default: 'Pending'
+    enum: ['Validating', 'Confirmed', 'Preparing', 'Out for Delivery', 'Delivered', 'Cancelled', 'Failed'],
+    default: 'Validating'
+  },
+  failureReason: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true
