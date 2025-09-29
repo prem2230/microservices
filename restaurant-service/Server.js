@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './src/config/database.js';
 import restaurantRoutes from './src/routes/restaurant.routes.js';
+import { closeKafka, initKafka } from './src/services/kafkaService.js';
 
 dotenv.config();
 const app = express();
@@ -12,6 +13,8 @@ app.use(cors());
 app.use(express.json());
 
 connectDB();
+
+await initKafka();
 
 app.use('/api/v1/restaurant', restaurantRoutes);
 app.get('/api/v1/restaurant/health', (req,res) =>{
@@ -37,6 +40,11 @@ app.use((req, res) =>{
         message: 'Route not found'
     });
 });
+
+process.on('SIGTERM', async () => {
+    await closeKafka();
+    process.exit(0);
+})
 
 app.listen(PORT, () => {
     console.log(`Restaurant service is running on port ${PORT}`);
