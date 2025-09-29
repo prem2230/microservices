@@ -11,6 +11,11 @@ const orderSchema = new mongoose.Schema({
       ref: 'Restaurant',
       required: [true, 'Restaurant is required']
     },
+  restaurantOwnerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'RestaurantOwner',
+    required: [true, 'Restaurant owner is required']
+  },
   items: [{
     foodItemId: {
       type: mongoose.Schema.Types.ObjectId,

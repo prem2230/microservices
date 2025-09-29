@@ -12,7 +12,7 @@ router.get('/get-order/:orderId', authMiddleware, customerMiddleware, getOrderBy
 router.put('/update-order/:orderId', authMiddleware, customerMiddleware,updateOrderItems );
 router.put('/cancel-order/:orderId', authMiddleware, customerMiddleware, cancelOrder);
 // router.delete('/delete-order/:orderId', authMiddleware, customerMiddleware, deleteOrder);
-// router.put('/update-order-status/:orderId', authMiddleware, ownerMiddleware, updateOrderStatus);
+router.put('/update-order-status/:orderId', authMiddleware, ownerMiddleware, updateOrderStatus);
 router.get('/get-all-ordersByRestaurant/:restaurantId',authMiddleware, ownerMiddleware, getOrdersByRestaurant)
 
 export default router;
