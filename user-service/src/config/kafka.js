@@ -13,5 +13,10 @@ export const consumer = kafka.consumer({ groupId: 'user-service-group' });
 export const TOPICS = {
     USER_REGISTERED: 'user.registered',
     USER_LOGGED_IN: 'user.logged_in',
-    USER_UPDATED: 'user.updated'
+    USER_UPDATED: 'user.updated',
+
+    RESTAURANT_CREATED: 'restaurant.created',
+    RESTAURANT_UPDATED: 'restaurant.updated',
+    RESTAURANT_DELETED: 'restaurant.deleted',
+    
 }

@@ -157,13 +157,32 @@ const loginUser = async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            {
+        let tokenPayload = {};
+
+        if(user.role === 'admin'){
+            tokenPayload = {
                 userId: user._id,
-                role: user.role
-            },
+                role: user.role,
+            };
+        }else if(user.role === 'restaurant_owner'){
+            const restaurants = user.restaurants.filter(r => r.isActive).map(r => r.restaurantId);
+
+            tokenPayload = {
+                userId: user._id,
+                role: user.role,
+                restaurants: restaurants || []
+            };
+        }else{ // customer
+            tokenPayload = {
+                userId: user._id,
+                role: user.role,
+            };
+        }
+
+        const token = jwt.sign(
+            tokenPayload,
             process.env.SECRET_KEY,
-            { expiresIn: '1h' }
+            { expiresIn: '7d' }
         );
 
         try{
