@@ -47,6 +47,7 @@ const registerRestaurant = async (req, res) => {
                         address: newRestaurant.address,
                         cuisine: newRestaurant.cuisine,
                         contactNumber: newRestaurant.contactNumber,
+                        isActive: newRestaurant.isActive,
                         timestamp: new Date().toISOString()
                     })
                 }]
@@ -128,7 +129,7 @@ const updateRestaurant = async (req, res) => {
     try {
         const { id } = req.params;
         const ownerId = req.user.id;
-        const { name, address, contactNumber, cuisine } = req.body;
+        const { name, address, contactNumber, cuisine, isActive } = req.body;
 
         const restaurant = await Restaurant.findById(id);
         if (!restaurant) {
@@ -157,6 +158,7 @@ const updateRestaurant = async (req, res) => {
         restaurant.address = address || restaurant.address;
         restaurant.contactNumber = contactNumber || restaurant.contactNumber;
         restaurant.cuisine = cuisine || restaurant.cuisine;
+        restaurant.isActive = isActive !== undefined ? isActive : restaurant.isActive;
 
         await restaurant.save();
 
@@ -172,6 +174,7 @@ const updateRestaurant = async (req, res) => {
                         address: restaurant.address,
                         cuisine: restaurant.cuisine,
                         contactNumber: restaurant.contactNumber,
+                        isActive: restaurant.isActive,
                         timestamp: new Date().toISOString()
                     })
                 }]
