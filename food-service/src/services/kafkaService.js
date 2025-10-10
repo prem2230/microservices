@@ -38,8 +38,9 @@ export const initKafka = async () => {
 
 export const closeKafka = async () => {
     try{
+        await consumer.disconnect();
         await producer.disconnect();
-        console.log('Kafka producer disconnected successfully');
+        console.log('Kafka disconnected successfully');
     }catch (error) {
         console.error('Error closing Kafka:', error);
     }
