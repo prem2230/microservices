@@ -1,3 +1,4 @@
+import { producer, TOPICS } from '../config/kafka.js';
 import Order from '../models/order.model.js';
 import { restoreOrderAsync, validateOrderAsync } from '../services/orderValidation.service.js';
 
@@ -46,8 +47,26 @@ const placeOrder = async (req, res) => {
 
         const savedOrder = await newOrder.save();
 
-        validateOrderAsync(savedOrder._id).catch(console.error)
+        try{
+            await producer.send({
+                topic: TOPICS.ORDER_PLACED,
+                messages: [{
+                    key: savedOrder._id.toString(),
+                    value: JSON.stringify({
+                        orderId: savedOrder._id,
+                        userId: savedOrder.user,
+                        restaurantId: savedOrder.restaurantId,
+                        totalAmount: savedOrder.totalAmount,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        }catch (kafkaError){
+            console.error('Error publishing inventory reserve event', kafkaError);
+        }
 
+        validateOrderAsync(savedOrder._id).catch(console.error)
+        
         return res.status(201).json({
             success: true,
             message: 'Order placed successfully. Validation in progress.',
@@ -176,6 +195,25 @@ const updateOrderItems = async (req, res) => {
 
         const updatedOrder = await order.save();
 
+        try{
+            await producer.send({
+                topic: TOPICS.ORDER_UPDATED,
+                messages: [{
+                    key: updatedOrder._id.toString(),
+                    value: JSON.stringify({
+                        orderId: updatedOrder._id,
+                        userId: updatedOrder.user,
+                        restaurantId: updatedOrder.restaurantId,
+                        previousItems: previousItems,
+                        newItems: updatedOrder.items,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        }catch (kafkaError){
+            console.error('Error publishing order updated event', kafkaError);
+        }
+
         validateOrderAsync(updatedOrder._id, previousItems).catch(console.error);
 
         return res.status(200).json({
@@ -223,6 +261,24 @@ const cancelOrder = async (req, res) => {
 
         order.status = 'Cancelled';
         await order.save();
+
+        try{
+            await producer.send({
+                topic: TOPICS.ORDER_CANCELLED,
+                messages: [{
+                    key: order._id.toString(),
+                    value: JSON.stringify({
+                        orderId: order._id,
+                        userId: order.user,
+                        restaurantId: order.restaurantId,
+                        items: order.items,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        }catch (kafkaError){
+            console.error('Error publishing order cancelled event', kafkaError);
+        }
 
         restoreOrderAsync(order._id).catch(console.error);
 
@@ -335,6 +391,24 @@ const updateOrderStatus = async (req, res) => {
                 success: false,
                 message: 'Order not found'
             });
+        }
+
+        try{
+            await producer.send({
+                topic: TOPICS.ORDER_STATUS_UPDATED,
+                messages: [{
+                    key: updatedOrder._id.toString(),
+                    value: JSON.stringify({
+                        orderId: updatedOrder._id,
+                        newStatus: updatedOrder.status,
+                        userId: updatedOrder.user,
+                        restaurantId: updatedOrder.restaurantId,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        }catch (kafkaError){
+            console.error('Error publishing order status updated event', kafkaError);
         }
 
         return res.status(200).json({
