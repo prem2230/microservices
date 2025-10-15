@@ -48,13 +48,6 @@ const userSchema = new mongoose.Schema({
         },
         name: String,
         isActive: Boolean
-    }],
-    orders: [{
-        orderId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'orders'
-        },
-        status: String
     }]
 }, {
     timestamps: true,
