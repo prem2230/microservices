@@ -1,9 +1,10 @@
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-// import cors from 'cors';
+import cors from 'cors';
 import axios from 'axios';
 
 const app = express();
+app.use(cors());
 
 app.use('/api/v1/users', createProxyMiddleware({ target: 'http://user-service:3001', changeOrigin: true }));
 app.use('/api/v1/restaurants', createProxyMiddleware({ target: 'http://restaurant-service:3002', changeOrigin: true }));
