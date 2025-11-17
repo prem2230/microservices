@@ -26,10 +26,19 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
-    req.user = {
+    let user = {
       id: result.user.userId,
       role: result.user.role
+    };
+
+    if(result.user.role === 'restaurant_owner'){
+      user = {
+        ...user,
+        restaurants: result.user.restaurants || []
+      }
     }
+
+    req.user = user;
     next();
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Server Error' });

@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
+import { producer, TOPICS } from '../config/kafka.js';
 
 
 const registerUser = async (req, res) => {
@@ -31,6 +32,24 @@ const registerUser = async (req, res) => {
 
         await newUser.save();
 
+        try {
+            await producer.send({
+                topic: TOPICS.USER_REGISTERED,
+                messages: [{
+                    key: newUser._id.toString(),
+                    value: JSON.stringify({
+                        userId: newUser._id,
+                        email: newUser.email,
+                        name: newUser.name,
+                        role: newUser.role,
+                        number: newUser.number,
+                    })
+                }]
+            })
+        } catch (kafkaError) {
+            console.error('Error sending message to Kafka:', kafkaError);
+        }
+
         const userData = {
             id: newUser._id,
             email: newUser.email,
@@ -38,7 +57,7 @@ const registerUser = async (req, res) => {
             role: newUser.role,
             number: newUser.number,
         }
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: 'User registered successfully',
             user: userData
@@ -47,13 +66,13 @@ const registerUser = async (req, res) => {
         console.error('Error registering user:', error);
 
         if (error.name === 'ValidationError') {
-           const errorMessages = [];
+            const errorMessages = [];
             for (let key in error.errors) {
                 errorMessages.push(`${error.errors[key].message}`);
             }
             return res.status(400).json({
                 success: false,
-               message: `Validation failed. ${errorMessages.join('. ')}`,
+                message: `Validation failed. ${errorMessages.join('. ')}`,
             });
         }
 
@@ -77,7 +96,7 @@ const registerUser = async (req, res) => {
                 value: error.value
             });
         }
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -87,7 +106,6 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, number, password } = req.body;
-
 
         const loginCredential = email || number;
 
@@ -139,16 +157,54 @@ const loginUser = async (req, res) => {
             });
         }
 
-        const token = jwt.sign(
-            {
+        let tokenPayload = {};
+
+        if(user.role === 'admin'){
+            tokenPayload = {
                 userId: user._id,
-                role: user.role
-            },
+                role: user.role,
+            };
+        }else if(user.role === 'restaurant_owner'){
+            const restaurants = user.restaurants.filter(r => r.isActive).map(r => r.restaurantId);
+
+            tokenPayload = {
+                userId: user._id,
+                role: user.role,
+                restaurants: restaurants || []
+            };
+        }else{ // customer
+            tokenPayload = {
+                userId: user._id,
+                role: user.role,
+            };
+        }
+
+        const token = jwt.sign(
+            tokenPayload,
             process.env.SECRET_KEY,
-            { expiresIn: '1h' }
+            { expiresIn: '7d' }
         );
 
-        res.status(200).json({
+        try{
+            await producer.send({
+                topic: TOPICS.USER_LOGGED_IN,
+                messages: [{
+                    key: user._id.toString(),
+                    value: JSON.stringify({
+                        userId: user._id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        number: user.number,
+                        loginTime: new Date().toISOString()
+                    })
+                }]
+            })
+        }catch(kafkaError){
+            console.error('Error sending message to Kafka:', kafkaError);
+        }
+
+        return res.status(200).json({
             success: true,
             message: 'Login successful',
             token,
@@ -163,7 +219,7 @@ const loginUser = async (req, res) => {
 
     } catch (error) {
         console.error('Error logging in user:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({ message: 'Internal server error' });
     }
 }
 
@@ -171,7 +227,7 @@ const getProfile = async (req, res) => {
     try {
         const user = req.user;
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: 'User profile retrieved successfully',
             user: {
@@ -186,7 +242,7 @@ const getProfile = async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting user profile:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });
@@ -198,21 +254,21 @@ const getUserById = async (req, res) => {
         const { id } = req.params;
         const user = await User.findById(id).select('-password');
 
-        if (!user) {    
+        if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
-        }   
-        
-        res.status(200).json({
+        }
+
+        return res.status(200).json({
             success: true,
             message: 'User fetched successfully',
             user
         });
     } catch (error) {
         console.error('Error fetching user by ID:', error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Internal server error'
         });

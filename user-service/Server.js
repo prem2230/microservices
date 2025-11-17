@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './src/config/database.js';
 import userRoutes from './src/routes/user.routes.js';
+import { closeKafka, initKafka } from './src/services/kafkaService.js';
 
 
 dotenv.config();
@@ -13,6 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 connectDB();
+
+await initKafka();
 
 app.use('/api/v1/users', userRoutes);
 app.get('/api/v1/users/health', (req,res) =>{
@@ -37,6 +40,11 @@ app.use((req, res) =>{
         success: false,
         message: 'Route not found'
     });
+});
+
+process.on('SIGTERM', async () => {
+    await closeKafka();
+    process.exit(0);
 });
 
 app.listen(PORT, () => {

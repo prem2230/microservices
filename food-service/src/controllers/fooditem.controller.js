@@ -1,9 +1,11 @@
+import { producer, TOPICS } from '../config/kafka.js';
 import FoodItem from '../models/fooditem.model.js';
 
 const addFoodItem = async (req, res) => {
   try {
     const { restaurantId } = req.params;
     const ownerId = req.user.id;
+    const ownedRestaurants = req.user.restaurants || [];
     const { name, price, isVeg, category, description, isAvailable, image, quantity } = req.body;
 
     const requiredFields = ['name', 'price', 'isVeg', 'category'];
@@ -17,13 +19,20 @@ const addFoodItem = async (req, res) => {
       });
     }
 
+    if (!ownedRestaurants.includes(restaurantId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Restaurant not accessible. Either you don\'t own this restaurant or it\'s inactive.'
+      });
+    }
+
     const newFoodItem = new FoodItem({
       name,
       price,
       isVeg,
       category,
       description: description || '',
-      restaurant: restaurantId,// need to add kafka
+      restaurant: restaurantId,
       ownerId,
       isAvailable,
       image: image || '',
@@ -32,6 +41,24 @@ const addFoodItem = async (req, res) => {
     });
 
     await newFoodItem.save();
+
+    try {
+      await producer.send({
+        topic: TOPICS.FOOD_ITEM_CREATED,
+        messages: [{
+          key: newFoodItem._id.toString(),
+          value: JSON.stringify({
+            foodItemId: newFoodItem._id,
+            restaurantId: newFoodItem.restaurant,
+            name: newFoodItem.name,
+            price: newFoodItem.price,
+            category: newFoodItem.category
+          })
+        }]
+      })
+    } catch (kafkaError) {
+      console.error('Failed to publish food item created event:', kafkaError);
+    }
 
     return res.status(201).json({
       success: true,
@@ -89,6 +116,27 @@ const updateFoodItem = async (req, res) => {
 
     await foodItem.save();
 
+    try {
+      await producer.send({
+        topic: TOPICS.FOOD_ITEM_UPDATED,
+        messages: [{
+          key: foodItem._id.toString(),
+          value: JSON.stringify({
+            foodItemId: foodItem._id,
+            restaurantId: foodItem.restaurant,
+            ownerId: foodItem.ownerId,
+            name: foodItem.name,
+            price: foodItem.price,
+            category: foodItem.category,
+            isAvailable: foodItem.isAvailable,
+            timestamp: new Date().toISOString()
+          })
+        }]
+      })
+    } catch (kafkaError) {
+      console.error('Failed to publish food item updated event:', kafkaError);
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Food item updated successfully',
@@ -144,73 +192,6 @@ const updateFoodItemQuantity = async (req, res) => {
   }
 }
 
-const updateInventory = async (req, res) => {
-  try{
-      const { id } = req.params;
-      const { quantity, operation = 'reduce' } = req.body;
-
-      let updateQuery = {};
-      let findQuery = {_id: id};
-
-      if(operation === 'reduce'){
-        findQuery.quantity = { $gte: quantity };
-
-        const foodItem = await FoodItem.findOne(findQuery);
-
-        if(!foodItem){
-          return res.status(400).json({
-            success: false,
-            message: 'Insufficient quantity'
-          });
-        }
-
-        const newQuantity = foodItem.quantity - quantity;
-        const isAvailable = newQuantity > 0;
-
-        updateQuery = {
-          quantity: newQuantity,
-          isAvailable
-        };
-
-      }else if(operation === 'add') {
-        updateQuery = {
-          $inc: { quantity: quantity },
-          $set: { isAvailable: true }
-        };
-      }else{
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid operation. Use "reduce" or "add".'
-        });
-      }
-
-      const updatedFoodItem = await FoodItem.findByIdAndUpdate(
-        id, 
-        updateQuery,
-        { new: true }
-      );
-
-      if(!updatedFoodItem){
-        return res.status(404).json({
-          success: false,
-          message: 'Food item not found'
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: `Quantity updated successfully`,
-        foodItem:updatedFoodItem
-      });
-  }catch(error){
-    console.error('Error updating inventory:', error)
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to reduce quantity'
-    });
-  }
-}
-
 const deleteFoodItem = async (req, res) => {
   try {
     const { id } = req.params;
@@ -231,6 +212,23 @@ const deleteFoodItem = async (req, res) => {
       });
     }
 
+    try {
+      await producer.send({
+        topic: TOPICS.FOOD_ITEM_DELETED,
+        messages: [{
+          key: id,
+          value: JSON.stringify({
+            foodItemId: foodItem._id,
+            restaurantId: foodItem.restaurant,
+            ownerId: foodItem.ownerId,
+            name: foodItem.name,
+            timestamp: new Date().toISOString()
+          })
+        }]
+      })
+    } catch (kafkaError) {
+      console.error('Failed to publish food item deleted event:', kafkaError);
+    }
     return res.status(200).json({
       success: true,
       message: 'Food item deleted successfully'
@@ -321,4 +319,4 @@ const getFoodItemById = async (req, res) => {
   }
 };
 
-export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, updateFoodItemQuantity, deleteFoodItem, getFoodItemsByRestaurant, updateInventory };
+export { addFoodItem, getAllFoodItems, getFoodItemById, updateFoodItem, updateFoodItemQuantity, deleteFoodItem, getFoodItemsByRestaurant };

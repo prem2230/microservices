@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './src/config/database.js';
 import orderRoutes from './src/routes/order.route.js';
+import { closeKafka, initKafka } from './src/services/kafkaService.js';
 
 dotenv.config();
 const app = express();
@@ -12,6 +13,8 @@ app.use(cors());
 app.use(express.json());
 
 connectDB();
+
+await initKafka();
 
 app.use('/api/v1/order', orderRoutes);
 app.get('/api/v1/order/health', (req,res) =>{
@@ -38,6 +41,10 @@ app.use((req, res) =>{
     });
 });
 
+process.on('SIGTERM', async () => {
+    await closeKafka();
+    process.exit(0);
+})
 
 app.listen(PORT, () => {
     console.log(`Order service is running on port ${PORT}`);

@@ -1,3 +1,4 @@
+import { producer, TOPICS } from '../config/kafka.js';
 import Restaurant from '../models/restaurant.model.js';
 
 const registerRestaurant = async (req, res) => {
@@ -29,10 +30,31 @@ const registerRestaurant = async (req, res) => {
             address,
             contactNumber,
             cuisine,
-            owner:ownerId 
+            owner: ownerId
         });
 
         await newRestaurant.save();
+
+        try {
+            await producer.send({
+                topic: TOPICS.RESTAURANT_CREATED,
+                messages: [{
+                    key: newRestaurant._id.toString(),
+                    value: JSON.stringify({
+                        restaurantId: newRestaurant._id.toString(),
+                        ownerId: ownerId,
+                        name: newRestaurant.name,
+                        address: newRestaurant.address,
+                        cuisine: newRestaurant.cuisine,
+                        contactNumber: newRestaurant.contactNumber,
+                        isActive: newRestaurant.isActive,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        } catch (kafkaError) {
+            console.error('Error sending message to Kafka:', kafkaError);
+        }
 
         return res.status(201).json({
             success: true,
@@ -107,7 +129,7 @@ const updateRestaurant = async (req, res) => {
     try {
         const { id } = req.params;
         const ownerId = req.user.id;
-        const { name, address, contactNumber, cuisine } = req.body;
+        const { name, address, contactNumber, cuisine, isActive } = req.body;
 
         const restaurant = await Restaurant.findById(id);
         if (!restaurant) {
@@ -125,7 +147,7 @@ const updateRestaurant = async (req, res) => {
             });
         }
 
-        if(restaurant.owner.toString() !== ownerId){
+        if (restaurant.owner.toString() !== ownerId) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to update this restaurant'
@@ -136,8 +158,30 @@ const updateRestaurant = async (req, res) => {
         restaurant.address = address || restaurant.address;
         restaurant.contactNumber = contactNumber || restaurant.contactNumber;
         restaurant.cuisine = cuisine || restaurant.cuisine;
+        restaurant.isActive = isActive !== undefined ? isActive : restaurant.isActive;
 
         await restaurant.save();
+
+        try {
+            await producer.send({
+                topic: TOPICS.RESTAURANT_UPDATED,
+                messages: [{
+                    key: restaurant._id.toString(),
+                    value: JSON.stringify({
+                        restaurantId: restaurant._id,
+                        ownerId: ownerId,
+                        name: restaurant.name,
+                        address: restaurant.address,
+                        cuisine: restaurant.cuisine,
+                        contactNumber: restaurant.contactNumber,
+                        isActive: restaurant.isActive,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            })
+        } catch (kafkaError) {
+            console.error('Error sending message to Kafka:', kafkaError);
+        }
 
         return res.status(200).json({
             success: true,
@@ -165,7 +209,7 @@ const deleteRestaurant = async (req, res) => {
             });
         }
 
-        if(restaurant.owner.toString() !== req.user.id){
+        if (restaurant.owner.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
                 message: 'You are not authorized to delete this restaurant'
@@ -173,6 +217,22 @@ const deleteRestaurant = async (req, res) => {
         }
 
         await Restaurant.findByIdAndDelete(id);
+
+        try {
+            await producer.send({
+                topic: TOPICS.RESTAURANT_DELETED,
+                messages: [{
+                    key: restaurant._id.toString(),
+                    value: JSON.stringify({
+                        restaurantId: restaurant._id,
+                        ownerId: req.user.id,
+                        timestamp: new Date().toISOString()
+                    })
+                }]
+            });
+        } catch (kafkaError) {
+            console.error('Error sending message to Kafka:', kafkaError);
+        }
 
         return res.status(200).json({
             success: true,
@@ -188,12 +248,12 @@ const deleteRestaurant = async (req, res) => {
 };
 
 const getRestaurantByOwner = async (req, res) => {
-    try{
+    try {
         const ownerId = req.user.id;
 
         const restaurants = await Restaurant.find({ owner: ownerId }).select('-owner');
 
-        if(!restaurants){
+        if (!restaurants) {
             return res.status(404).json({
                 success: false,
                 message: 'No restaurants found'
@@ -207,7 +267,7 @@ const getRestaurantByOwner = async (req, res) => {
             restaurants
         });
 
-    }catch(error){
+    } catch (error) {
         console.error('Error fetching restaurants:', error);
         return res.status(500).json({
             success: false,
@@ -216,4 +276,4 @@ const getRestaurantByOwner = async (req, res) => {
     }
 }
 
-export { registerRestaurant, getAllRestaurants, getRestaurantById,updateRestaurant, deleteRestaurant, getRestaurantByOwner };
+export { registerRestaurant, getAllRestaurants, getRestaurantById, updateRestaurant, deleteRestaurant, getRestaurantByOwner };
