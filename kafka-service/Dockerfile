@@ -1,4 +1,4 @@
-FROM bitnami/kafka:latest
+FROM apache/kafka:2.13-3.6.1
 
 ENV KAFKA_ENABLE_KRAFT=yes \
     KAFKA_CFG_NODE_ID=1 \
