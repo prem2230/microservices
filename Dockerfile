@@ -6,11 +6,10 @@ COPY api-gateway/package*.json ./
 RUN npm install
 COPY api-gateway/ ./
 
+# Use Railway-specific server file
+COPY api-gateway/Server.railway.js ./Server.js
+
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
-
-CMD ["npm", "start"]
+CMD ["node", "Server.js"]
