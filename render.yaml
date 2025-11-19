@@ -1,0 +1,106 @@
+services:
+  - type: web
+    name: api-gateway
+    env: docker
+    dockerfilePath: ./api-gateway/Dockerfile
+    dockerContext: ./api-gateway
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: USER_SERVICE_URL
+        value: https://user-service-food-delivery.onrender.com
+      - key: RESTAURANT_SERVICE_URL
+        value: https://restaurant-service-food-delivery.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://order-service-food-delivery.onrender.com
+      - key: FOOD_SERVICE_URL
+        value: https://food-service-food-delivery.onrender.com
+
+  - type: web
+    name: user-service-food-delivery
+    env: docker
+    dockerfilePath: ./user-service/Dockerfile
+    dockerContext: ./user-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGO_URI
+        value: mongodb+srv://premcc6750:amutha3022@prem.6hj9ncu.mongodb.net/food-delivery?retryWrites=true&w=majority
+      - key: SECRET_KEY
+        value: f181b12f4178b0dfae118f939dbd8e27751aa588b331ee222e6dedb4e97026cd
+      - key: KAFKA_BROKER
+        value: https://kafka-service-food-delivery.onrender.com:9092
+
+  - type: web
+    name: restaurant-service-food-delivery
+    env: docker
+    dockerfilePath: ./restaurant-service/Dockerfile
+    dockerContext: ./restaurant-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: MONGO_URI
+        value: mongodb+srv://premcc6750:amutha3022@prem.6hj9ncu.mongodb.net/food-delivery?retryWrites=true&w=majority
+      - key: SECRET_KEY
+        value: f181b12f4178b0dfae118f939dbd8e27751aa588b331ee222e6dedb4e97026cd
+      - key: KAFKA_BROKER
+        value: https://kafka-service-food-delivery.onrender.com:9092
+
+  - type: web
+    name: order-service-food-delivery
+    env: docker
+    dockerfilePath: ./order-service/Dockerfile
+    dockerContext: ./order-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3003
+      - key: MONGO_URI
+        value: mongodb+srv://premcc6750:amutha3022@prem.6hj9ncu.mongodb.net/food-delivery?retryWrites=true&w=majority
+      - key: SECRET_KEY
+        value: f181b12f4178b0dfae118f939dbd8e27751aa588b331ee222e6dedb4e97026cd
+      - key: KAFKA_BROKER
+        value: https://kafka-service-food-delivery.onrender.com:9092
+
+  - type: web
+    name: food-service-food-delivery
+    env: docker
+    dockerfilePath: ./food-service/Dockerfile
+    dockerContext: ./food-service
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3004
+      - key: MONGO_URI
+        value: mongodb+srv://premcc6750:amutha3022@prem.6hj9ncu.mongodb.net/food-delivery?retryWrites=true&w=majority
+      - key: SECRET_KEY
+        value: f181b12f4178b0dfae118f939dbd8e27751aa588b331ee222e6dedb4e97026cd
+      - key: KAFKA_BROKER
+        value: https://kafka-service-food-delivery.onrender.com:9092
+
+  - type: web
+    name: kafka-service-food-delivery
+    env: docker
+    dockerfilePath: ./kafka/Dockerfile
+    dockerContext: ./kafka
+    envVars:
+      - key: KAFKA_ENABLE_KRAFT
+        value: "yes"
+      - key: KAFKA_CFG_NODE_ID
+        value: "1"
+      - key: KAFKA_CFG_PROCESS_ROLES
+        value: broker,controller
+      - key: KAFKA_CFG_LISTENERS
+        value: PLAINTEXT://:9092,CONTROLLER://:9093
+      - key: KAFKA_CFG_ADVERTISED_LISTENERS
+        value: PLAINTEXT://kafka-service-food-delivery.onrender.com:9092
+      - key: ALLOW_PLAINTEXT_LISTENER
+        value: "yes"
