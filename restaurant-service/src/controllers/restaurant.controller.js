@@ -4,7 +4,7 @@ import Restaurant from '../models/restaurant.model.js';
 const registerRestaurant = async (req, res) => {
     try {
         const ownerId = req.user.id;
-        const { name, address, contactNumber, cuisine } = req.body;
+        const { name, address, contactNumber, cuisine, image, rating, deliveryFee, deliveryTime } = req.body;
 
         const requiredFields = ['name', 'address', 'contactNumber', 'cuisine'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
@@ -30,7 +30,11 @@ const registerRestaurant = async (req, res) => {
             address,
             contactNumber,
             cuisine,
-            owner: ownerId
+            owner: ownerId,
+            image: image || 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            rating: rating || 0,
+            deliveryFee: deliveryFee || 0,
+            deliveryTime: deliveryTime || 0
         });
 
         await newRestaurant.save();
@@ -48,6 +52,9 @@ const registerRestaurant = async (req, res) => {
                         cuisine: newRestaurant.cuisine,
                         contactNumber: newRestaurant.contactNumber,
                         isActive: newRestaurant.isActive,
+                        rating: newRestaurant.rating,
+                        deliveryFee: newRestaurant.deliveryFee,
+                        deliveryTime: newRestaurant.deliveryTime,
                         timestamp: new Date().toISOString()
                     })
                 }]
@@ -129,7 +136,7 @@ const updateRestaurant = async (req, res) => {
     try {
         const { id } = req.params;
         const ownerId = req.user.id;
-        const { name, address, contactNumber, cuisine, isActive } = req.body;
+        const { name, address, contactNumber, cuisine, isActive, image, rating, deliveryFee, deliveryTime } = req.body;
 
         const restaurant = await Restaurant.findById(id);
         if (!restaurant) {
@@ -159,6 +166,10 @@ const updateRestaurant = async (req, res) => {
         restaurant.contactNumber = contactNumber || restaurant.contactNumber;
         restaurant.cuisine = cuisine || restaurant.cuisine;
         restaurant.isActive = isActive !== undefined ? isActive : restaurant.isActive;
+        restaurant.image = image || restaurant.image;
+        restaurant.rating = rating || restaurant.rating;
+        restaurant.deliveryFee = deliveryFee || restaurant.deliveryFee;
+        restaurant.deliveryTime = deliveryTime || restaurant.deliveryTime;
 
         await restaurant.save();
 
@@ -175,6 +186,9 @@ const updateRestaurant = async (req, res) => {
                         cuisine: restaurant.cuisine,
                         contactNumber: restaurant.contactNumber,
                         isActive: restaurant.isActive,
+                        rating: restaurant.rating,
+                        deliveryFee: restaurant.deliveryFee,
+                        deliveryTime: restaurant.deliveryTime,
                         timestamp: new Date().toISOString()
                     })
                 }]

@@ -39,7 +39,24 @@ const restaurantSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  rating: {
+    type: Number,
+    default: 0,
+    min: [0, 'Rating cannot be less than 0'],
+    max: [5, 'Rating cannot be more than 5']
+  },
+  deliveryTime: {
+    type: Number,
+    min: [0, 'Delivery time cannot be less than 0']
+  },
+  deliveryFee: {
+    type: Number,
+    min: [0, 'Delivery fee cannot be less than 0']
+  },
+ image: {
+  type: String,
+ }
 }, {
   timestamps: true
 });
