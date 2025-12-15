@@ -16,8 +16,8 @@ connectDB();
 
 await initKafka();
 
-app.use('/api/v1/order', orderRoutes);
-app.get('/api/v1/order/health', (req,res) =>{
+app.use('/api/v1/orders', orderRoutes);
+app.get('/api/v1/orders/health', (req,res) =>{
     res.json({
         service: 'Order Service',
         status: 'OK',

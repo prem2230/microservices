@@ -43,7 +43,7 @@ app.get('/health', async (req, res) => {
     const services = [
         { name: 'User service', url: 'http://user-service:3001/api/v1/users' },
         { name: 'Restaurant service', url: 'http://restaurant-service:3002/api/v1/restaurant' },
-        { name: 'Order service', url: 'http://order-service:3003/api/v1/order' },
+        { name: 'Order service', url: 'http://order-service:3003/api/v1/orders' },
         { name: 'Food service', url: 'http://food-service:3004/api/v1/fooditem' },
     ]
 
