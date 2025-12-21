@@ -40,16 +40,16 @@ app.use('/api/v1/fooditem', createProxyMiddleware({
 
 app.get('/health', async (req, res) => {
     const services = [
-        { name: 'User service', url: 'http://user-service:3001/api/v1/users' },
-        { name: 'Restaurant service', url: 'http://restaurant-service:3002/api/v1/restaurant' },
-        { name: 'Order service', url: 'http://order-service:3003/api/v1/orders' },
-        { name: 'Food service', url: 'http://food-service:3004/api/v1/fooditem' },
+        { name: 'User service', url: 'http://user-service:3001/api/v1/users/health' },
+        { name: 'Restaurant service', url: 'http://restaurant-service:3002/api/v1/restaurant/health' },
+        { name: 'Order service', url: 'http://order-service:3003/api/v1/orders/health' },
+        { name: 'Food service', url: 'http://food-service:3004/api/v1/fooditem/health' },
     ]
 
     const healthChecks = await Promise.allSettled(
         services.map(async (service) => {
             try {
-                const response = await axios.get(`${service.url}/health`, { timeout: 5000 });
+                const response = await axios.get(`${service.url}`, { timeout: 5000 });
                 return { name: service.name, status: 'UP', data: response.data };
             } catch (error) {
                 return { name: service.name, status: 'DOWN', error: error.message };
