@@ -4,6 +4,7 @@ import cors from 'cors';
 import axios from 'axios';
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 app.use('/api/v1/users', createProxyMiddleware({
@@ -56,7 +57,7 @@ app.get('/health', async (req, res) => {
         })
     );
 
-    res.json({
+    return res.json({
         gateway: 'API Gateway',
         status: 'UP',
         timestamp: new Date().toISOString(),
@@ -64,7 +65,7 @@ app.get('/health', async (req, res) => {
     })
 })
 
-app.listen(3000, () => {
-    console.log('API Gateway is running on port 3000');
-    console.log('Health check endpoint: http://localhost:3000/health');
+app.listen(PORT, () => {
+    console.log(`API Gateway is running on port ${PORT}`);
+    console.log(`Health check endpoint: http://localhost:${PORT}/health`);
 });
