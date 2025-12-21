@@ -6,8 +6,6 @@ import axios from 'axios';
 const app = express();
 app.use(cors());
 
-app.use(cors());
-
 app.use('/api/v1/users', createProxyMiddleware({
     target: 'http://user-service:3001',
     changeOrigin: true,
