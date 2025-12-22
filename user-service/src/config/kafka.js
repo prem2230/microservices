@@ -6,7 +6,6 @@ const kafka = new Kafka({
     brokers: [process.env.KAFKA_BROKER]
 });
 
-console.log(process.env.KAFKA_BROKER);
 export const producer = kafka.producer();
 export const consumer = kafka.consumer({ groupId: 'user-service-group' });
 
