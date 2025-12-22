@@ -52,7 +52,7 @@ app.get('/health', async (req, res) => {
     const healthChecks = await Promise.allSettled(
         services.map(async (service) => {
             try {
-                const response = await axios.get(`${service.url}`);
+                const response = await axios.get(`${service.url}`); // for openshift timeout removed
                 return { name: service.name, status: 'UP', data: response.data };
             } catch (error) {
                 return { name: service.name, status: 'DOWN', error: error.message };
