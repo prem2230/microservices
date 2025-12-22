@@ -52,7 +52,7 @@ app.get('/health', async (req, res) => {
     const healthChecks = await Promise.allSettled(
         services.map(async (service) => {
             try {
-                const response = await axios.get(`${service.url}`, { timeout: 5000 });
+                const response = await axios.get(`${service.url}`);
                 return { name: service.name, status: 'UP', data: response.data };
             } catch (error) {
                 return { name: service.name, status: 'DOWN', error: error.message };
