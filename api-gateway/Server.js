@@ -6,6 +6,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const axiosInstance = axios.create({
+    timeout: 25000,
+    keepAlive: true,
+    maxSockets: 10
+});
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(cors());
@@ -52,7 +58,7 @@ app.get('/health', async (req, res) => {
     const healthChecks = await Promise.allSettled(
         services.map(async (service) => {
             try {
-                const response = await axios.get(`${service.url}`, { timeout: 25000 }); // for openshift timeout removed
+                const response = await axiosInstance.get(service.url); 
                 return { name: service.name, status: 'UP', data: response.data };
             } catch (error) {
                 return { name: service.name, status: 'DOWN', error: error.message };
