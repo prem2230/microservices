@@ -9,14 +9,14 @@ app.use(cors());
 app.use(cors());
 
 app.use('/api/v1/users', createProxyMiddleware({
-    target: 'http://user-service:80',
+    target: 'http://user-service:3001',
     changeOrigin: true,
     onError: (err, req, res) => {
         res.status(500).json({ error: 'User service is unavailable' });
     }
 }));
 app.use('/api/v1/restaurant', createProxyMiddleware({
-    target: 'http://restaurant-service:80',
+    target: 'http://restaurant-service:3002',
     changeOrigin: true,
     onError: (err, req, res) => {
         res.status(500).json({ error: 'Restaurant service is unavailable' });
@@ -24,7 +24,7 @@ app.use('/api/v1/restaurant', createProxyMiddleware({
 }));
 
 app.use('/api/v1/orders', createProxyMiddleware({
-    target: 'http://order-service:80',
+    target: 'http://order-service:3003',
     changeOrigin: true,
     onError: (err, req, res) => {
         res.status(500).json({ error: 'Order service is unavailable' });
@@ -32,7 +32,7 @@ app.use('/api/v1/orders', createProxyMiddleware({
 }));
 
 app.use('/api/v1/fooditem', createProxyMiddleware({
-    target: 'http://food-service:80',
+    target: 'http://food-service:3004',
     changeOrigin: true,
     onError: (err, req, res) => {
         res.status(500).json({ error: 'Food service is unavailable' });
@@ -41,10 +41,10 @@ app.use('/api/v1/fooditem', createProxyMiddleware({
 
 app.get('/health', async (req, res) => {
     const services = [
-        { name: 'User service', url: 'http://user-service:80/api/v1/users' },
-        { name: 'Restaurant service', url: 'http://restaurant-service:80/api/v1/restaurant' },
-        { name: 'Order service', url: 'http://order-service:80/api/v1/orders' },
-        { name: 'Food service', url: 'http://food-service:80/api/v1/fooditem' },
+        { name: 'User service', url: 'http://user-service:3001/api/v1/users' },
+        { name: 'Restaurant service', url: 'http://restaurant-service:3002/api/v1/restaurant' },
+        { name: 'Order service', url: 'http://order-service:3003/api/v1/orders' },
+        { name: 'Food service', url: 'http://food-service:3004/api/v1/fooditem' },
     ]
 
     const healthChecks = await Promise.allSettled(
