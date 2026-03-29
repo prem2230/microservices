@@ -1,0 +1,51 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+
+  branch-name-check:
+    name: Branch Name Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch naming convention
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if [[ ! "$BRANCH" =~ ^(feature|fix|hotfix|chore|release)/.+ ]]; then
+            echo "❌ Branch '$BRANCH' violates naming convention"
+            echo "Allowed: feature/*, fix/*, hotfix/*, chore/*, release/*"
+            exit 1
+          fi
+          echo "✅ Branch name valid: $BRANCH"
+
+  docker-build-check:
+    name: Docker Build - ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [user-service, food-service, order-service, restaurant-service, api-gateway]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ matrix.service }}:pr-${{ github.event.number }} \
+            ./${{ matrix.service }}
+
+  sonar-analysis:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

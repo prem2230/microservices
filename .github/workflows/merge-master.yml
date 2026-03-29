@@ -1,0 +1,26 @@
+name: Post Merge - Master
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  docker-compose-validate:
+    name: Validate docker-compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose syntax
+        run: docker compose -f docker-compose.yml config
+
+  notify-success:
+    name: Merge Summary
+    runs-on: ubuntu-latest
+    needs: docker-compose-validate
+    steps:
+      - name: Log merge info
+        run: |
+          echo "✅ Merged to master by: ${{ github.actor }}"
+          echo "📦 Commit: ${{ github.sha }}"
+          echo "🕐 Time: $(date)"
